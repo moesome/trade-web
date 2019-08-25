@@ -8,7 +8,6 @@ module.exports = {
     },
     devServer: {
         allowedHosts: [
-            'spike.moesome.com',
             'trade.moesome.com'
         ],
 

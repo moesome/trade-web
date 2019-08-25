@@ -42,7 +42,7 @@
                             <div v-if="(data.remain === '已结束')">已结束</div>
                             <div v-else-if="(data.stock <= 0)">已售空</div>
                             <div v-else-if="data.remain !== undefined?data.remain.startsWith('距离开始还有'):false">{{data.remain}}</div>
-                            <div v-else @click="spike(data)">购买</div>
+                            <div v-else @click="buy(data)">购买</div>
                         </template>
                     </a-card>
                 </div>
@@ -71,7 +71,7 @@
                 this.fetchData(this.$route.params.id);
             },
             check(record){
-                this.$axios.get("spike_orders/check/"+record.id,{withCredentials: true})
+                this.$axios.get("commodity_orders/check/"+record.id,{withCredentials: true})
                     .then((response) => {
                         //console.log(response);
                         let data = response.data;
@@ -82,7 +82,7 @@
                             this.timer = null;
                             record.stock--;
                             this.showSuccessMsg("秒杀成功！")
-                        }else if (data.code === -513) {
+                        }else if(data.code < 0){
                             record.loading = false;
                             clearInterval(this.timer);
                             this.timer = null;
@@ -93,14 +93,14 @@
                         //console.log(e)
                     });
             },
-            spike(record){
+            buy(record){
                 let me = this;
                 this.$modal.confirm({
                     title: '您即将秒杀商品： '+record.name,
                     content: '此操作将扣除您 '+record.price+' 个金币是否继续？',
                     onOk() {
                         if (me.$store.state.user.coin >= record.price){
-                            me.doSpike(record)
+                            me.doBuy(record)
                         } else {
                             me.showWrongMsg("没有足够金币")
                         }
@@ -108,20 +108,19 @@
                     onCancel() {},
                 });
             },
-            doSpike(record){
+            doBuy(record){
                 //console.log(record.id)
                 if (this.$store.state.isLogin === false) {
                     this.$router.push({name:"login"});
                 }else{
                     record.loading = true;
-                    this.$axios.patch("spike_orders",{"spikeId":record.id},{withCredentials: true})
+                    this.$axios.patch("commodity_orders",{"commodityId":record.id},{withCredentials: true})
                         .then((response) => {
                             let data = response.data;
                             if (data.code === 0){
                                 this.showSuccessMsg("排队中...");
                                 setTimeout(()=>{
                                     this.timer = setInterval(() => {
-                                        // 某些操作
                                         this.check(record);
                                     }, 50)
                                 },50)

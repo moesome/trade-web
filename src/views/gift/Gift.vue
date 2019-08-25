@@ -30,7 +30,7 @@
     const columns = [
         { title: '订单号', sorter: true,width: '20%',dataIndex: 'id', key: 'id' },
         { title: '收货人', width: '20%',dataIndex: 'receive_name', key: 'receive_name' },
-        { title: '商品名称',width: '20%', dataIndex: 'name', key: 'name' },
+        { title: '商品名称',width: '20%', dataIndex: 'commodityName', key: 'commodityName' },
         { title: '订单创建时间', width: '20%',dataIndex: 'createdAt', key: 'createdAt' },
         { title: '订单状态', width: '10%',dataIndex: 'status', key: 'status' },
         { title: '发货', width: '10%',dataIndex: '', key: 'send', scopedSlots: { customRender: 'action' } },
@@ -62,7 +62,7 @@
             handleOk() {
                 this.visible = false;
                 this.confirmLoading = false;
-                this.$axios.patch('sends/'+this.record.id,{
+                this.$axios.patch('commodity_orders/sends/'+this.record.id,{
                     },
                     {withCredentials: true}
                 ).then((response) => {
@@ -115,7 +115,7 @@
                     params.sortOrder = 'descend'
                 }
 
-                this.$axios.get('sends?page='+page+"&order="+params.sortOrder,{withCredentials: true}
+                this.$axios.get('commodity_orders/sends?page='+page+"&order="+params.sortOrder,{withCredentials: true}
                 ).then((response) => {
                     //console.log("index:")
                     //console.log(response)
@@ -130,8 +130,8 @@
                         if (item.username === null){
                             continue;
                         }
-                        item.key = item.spikeOrderId;
-                        item.id = item.spikeOrderId;
+                        item.key = item.commodityOrderId;
+                        item.id = item.commodityOrderId;
                         item.receive_name = item.username;
                         item.createdAt = this.$dateFormat(item.createdAt).toLocaleString();
 
@@ -143,31 +143,28 @@
                                     { title: '创建时间', width: '20%',dataIndex: 'createdAt', key: 'createdAt' },
                                     { title: '发货', width: '10%',dataIndex: '', key: 'send', scopedSlots: { customRender: 'action' } },
                             */
-                        /**
-                         *   1.待发货
-                         2.用户催单
-                         3.所有者已发送奖品
-                         4.完成订单
-                         5.订单异常
-                         */
-
-                        switch (item.status) {
-                            case 1:
-                                item.status = "待发货";
-                                break;
-                            case 2:
-                                item.status = "用户催单";
-                                break;
-                            case 3:
-                                item.status = "所有者已发送奖品";
-                                break;
-                            case 4:
-                                item.status = "完成订单";
-                                break;
-                            case 5:
-                                item.status = "订单异常";
-                                break;
+                        if (item.status == 1){
+                            item.status = "处理中"
+                        }else{
+                            switch (item.status) {
+                                case 0:
+                                    item.status = "待发货";
+                                    break;
+                                case 10:
+                                    item.status = "用户催单";
+                                    break;
+                                case 20:
+                                    item.status = "所有者已发送奖品";
+                                    break;
+                                case 30:
+                                    item.status = "完成订单";
+                                    break;
+                                default:
+                                    item.status = "订单异常";
+                                    break;
+                            }
                         }
+
                         item.loading = false;
                         newList[pos++] = item;
                     }

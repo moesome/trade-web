@@ -6,19 +6,19 @@
             :pagination="pagination"
             @change="handleTableChange"
     >
-        <a-button :loading="record.loading" v-if="record.status === '待发货'" type="primary" ghost slot="action" href="javascript:;" slot-scope="record" @click="get(record)">提醒发货</a-button>
-        <a-button :loading="record.loading" v-else-if="record.status === '所有者已发送奖品'" type="primary" ghost slot="action" href="javascript:;" slot-scope="record" @click="received(record)">确认收货</a-button>
+        <a-button :loading="record.loading" v-if="record.commodityOrderStatus === '待发货'" type="primary" ghost slot="action" href="javascript:;" slot-scope="record" @click="get(record)">提醒发货</a-button>
+        <a-button :loading="record.loading" v-else-if="record.commodityOrderStatus === '所有者已发送奖品'" type="primary" ghost slot="action" href="javascript:;" slot-scope="record" @click="received(record)">确认收货</a-button>
     </a-table>
 </template>
 
 <script>
     const columns = [
-        { title: 'ID', sorter: true,width: '10%',dataIndex: 'id', key: 'id' },
-        { title: '名称',width: '10%', dataIndex: 'name', key: 'name' },
-        { title: '描述', width: '30%',dataIndex: 'detail', key: 'detail' },
-        { title: '创建时间', width: '20%',dataIndex: 'createdAt', key: 'createdAt' },
-        { title: '状态', width: '20%',dataIndex: 'status', key: 'status' },
-        { title: '获取奖励', width: '10%',dataIndex: '', key: 'spike', scopedSlots: { customRender: 'action' } },
+        { title: 'ID', sorter: true,width: '10%',dataIndex: 'commodityOrderId', key: 'commodityOrderId' },
+        { title: '名称',width: '10%', dataIndex: 'commodityName', key: 'commodityName' },
+        { title: '描述', width: '30%',dataIndex: 'commodityDetail', key: 'commodityDetail' },
+        { title: '创建时间', width: '20%',dataIndex: 'commodityOrderCreatedAt', key: 'commodityOrderCreatedAt' },
+        { title: '状态', width: '20%',dataIndex: 'commodityOrderStatus', key: 'commodityOrderStatus' },
+        { title: '获取奖励', width: '10%',dataIndex: '', key: 'get', scopedSlots: { customRender: 'action' } },
     ];
     export default {
         name: "Order.vue",
@@ -39,12 +39,13 @@
         },
         methods:{
             get(record){
-                let spikeOrderId = record.id;
-                this.$axios.patch('sends/remind/'+spikeOrderId,{},{withCredentials: true}
+                let commodityOrderId = record.id;
+                console.log(commodityOrderId)
+                this.$axios.patch('commodity_orders/sends/remind/'+commodityOrderId,{},{withCredentials: true}
                 ).then((response) => {
                     if (response.data.code === 0){
                         this.showSuccessMsg("已提醒项目发起者发货！")
-                        record.status = "已申请兑奖"
+                        record.commodityOrderStatus = "已申请兑奖"
                     }else{
                         this.showWrongMsg(response.data.message);
                     }
@@ -54,11 +55,12 @@
 
             },
             received(record){
-                let spikeOrderId = record.id;
-                this.$axios.patch('sends/received/'+spikeOrderId,{},{withCredentials: true}
+                let commodityOrderId = record.id;
+                console.log(commodityOrderId)
+                this.$axios.patch('commodity_orders/sends/received/'+commodityOrderId,{},{withCredentials: true}
                 ).then((response) => {
                     if (response.data.code === 0){
-                        record.status = "已收货"
+                        record.commodityOrderStatus = "已收货"
                     }else{
                         this.showWrongMsg(response.data.message);
                     }
@@ -92,7 +94,7 @@
                 if (params.sortOrder === undefined){
                     params.sortOrder = 'descend'
                 }
-                this.$axios.get('spike_orders?page='+page+"&order="+params.sortOrder,{withCredentials: true}
+                this.$axios.get('commodity_orders?page='+page+"&order="+params.sortOrder,{withCredentials: true}
                 ).then((response) => {
                     //console.log("index:")
                     //console.log(response)
@@ -102,33 +104,34 @@
                     let list = response.data.object;
                     for (let i = 0;i < list.length;i++) {
                         let item = list[i];
-                        item.key = item.spikeOrderId;
-                        item.id = item.spikeOrderId;
-                        item.name = item.spikeName;
-                        item.createdAt = this.$dateFormat(item.spikeOrderCreatedAt).toLocaleString();
+                        item.key = item.commodityOrderId;
+                        item.id = item.commodityOrderId;
+                        item.name = item.commodityName;
+                        item.createdAt = this.$dateFormat(item.commodityOrderCreatedAt).toLocaleString();
                         /**
-                         *   1.待发货
-                         2.用户催单
-                         3.所有者已发送奖品
-                         4.完成订单
-                         5.订单异常
+                         *
+                         *
                          */
-                        switch (item.status) {
-                            case 1:
-                                item.status = "待发货";
-                                break;
-                            case 2:
-                                item.status = "用户催单";
-                                break;
-                            case 3:
-                                item.status = "所有者已发送奖品";
-                                break;
-                            case 4:
-                                item.status = "完成订单";
-                                break;
-                            case 5:
-                                item.status = "订单异常";
-                                break;
+                        if (item.commodityOrderStatus < 10 && item.commodityOrderStatus > 0){
+                            item.commodityOrderStatus = "处理中"
+                        }else{
+                            switch (item.commodityOrderStatus) {
+                                case 0:
+                                    item.commodityOrderStatus = "待发货";
+                                    break;
+                                case 10:
+                                    item.commodityOrderStatus = "已申请兑奖";
+                                    break;
+                                case 20:
+                                    item.commodityOrderStatus = "所有者已发送奖品";
+                                    break;
+                                case 30:
+                                    item.commodityOrderStatus = "完成订单";
+                                    break;
+                                default:
+                                    item.commodityOrderStatus = "订单异常";
+                                    break;
+                            }
                         }
                         item.loading = false;
                     }
